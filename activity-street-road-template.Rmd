@@ -12,13 +12,26 @@ output: html_notebook
 #load in the data here 
 # we will only be using the "street-addresses.csv" file from the text
 
-
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+Addresses <- read_csv("https://mdbeckman.github.io/dcSupplement/data/street-addresses.csv")
 
 ```
 
 ## Recreate Solved Example using `sample(50)`
 
 ```{r}
+Sample <- Addresses %>% sample_n(size = 50)
+pattern <- "PO"
+
+Matches <- Sample %>% filter(grepl(pattern, address))
+
+Dont <- Sample %>% filter(!grepl(pattern, address))
+
+kable(Matches)
+kable(Dont)
 
 
 ```
@@ -26,6 +39,11 @@ output: html_notebook
 ## Recreate Soved Example using the entire `Address` data set
 
 ```{r}
+Matches_full <- Addresses %>% filter(grepl(pattern, address))
+Dont_full <- Addresses %>% filter(!grepl(pattern, address))
+
+kable(Matches_full)
+kable(Dont_full)
 
 
 ```
@@ -33,11 +51,19 @@ output: html_notebook
 #### Additional Question: How many addresses are a PO BOX (including NCSU BOX)? 
 
 ```{r}
+po_box_pattern <- "(PO BOX|NCSU BOX)"
+
+PO_BOX_matches <- Addresses[grepl(po_box_pattern, Addresses$address, ignore.case = TRUE), ]
+
+num_po_boxes <- nrow(PO_BOX_matches)
+
+num_po_boxes
+
 
 
 ```
 
-My answer here...... 
+# My answer here: There are `print(nrow(PO_BOX_matches))` addresses that are a PO BOX (including NCSU BOX).
 
 
 ## Back to the Streets: Your Turn
@@ -54,21 +80,49 @@ LeftOvers <-
           )
 ```
 
-My answer here.......
+# My answer here:
+# 1. `pattern <- "(ST|RD|ROAD)"`: This line defines a regular expression pattern to match street endings "ST", "RD", or "ROAD".
+# 2. `LeftOvers <- Addresses %>%`: This line starts a pipeline that applies a series of functions to the `Addresses` data frame, storing the result in `LeftOvers`.
+# 3. `filter( !grepl(pattern, address),`: This part filters out addresses that do not contain the pattern defined in the `pattern` variable.
+# 4. `!grepl("\\sAPT|UNIT\\s[\\d]+$", address),`: This part further filters out addresses that contain "APT" or "UNIT" followed by a number at the end of the address.
+# 5. `!grepl(" BOX ", address))`: This part also filters out addresses that contain " BOX ".
+
 
 #### Part 2: Implement your method on the entire `Addresses` data set. Explain how your code works line by line.
 
 ```{r}
+# Define pattern
+pattern <- "(ST|RD|ROAD|AVE|BLVD|CIR|DR|LN|PL|WAY|CT|PKWY|TRL|TER)"
 
+# Filter addresses that dont match the pattern, contain APT UNIT OR BOX
+LeftOvers <- Addresses %>% 
+  filter( !grepl(pattern, address),
+          !grepl("\\sAPT|UNIT\\s[\\d]+$", address),
+          !grepl(" BOX ", address)
+          )
+
+# Extract matched street endings
+StreetEndings <- Addresses %>%
+  filter(grepl(pattern, address)) %>%
+  mutate(street_ending = str_extract(address, pattern))
+
+# Display unique street endings
+unique_street_endings <- StreetEndings %>%
+  count(street_ending, sort = TRUE)
+
+kable(unique_street_endings)
 
 
 ```
 
-My answer here.......
+#My answer here.......
+# I explained all the code in the comments above
 
 #### Additional Question 1: Present your result from part 2 by providing a table in descending order of popularity for the street name endings you found
 
 ```{r}
+# Display the table
+kable(unique_street_endings)
 
 
 ```
@@ -78,9 +132,18 @@ My answer here.......
 Note: make sure your order street names according to popularity, not alphabetically.
 
 ```{r}
+ggplot(unique_street_endings, aes(x = reorder(street_ending, -n), y = n)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Popularity of Street Name Endings",
+       x = "Street Ending",
+       y = "Count") +
+  theme_minimal()
+
 
 ```
 
 #### Additional Question 3: Comment on any patterns you see
 
-My answer here.......
+# My answer here:
+# The bar chart shows that certain street endings, such as "RD", "DR", and "ST", are significantly more common than others. This means that these types of streets are more prevalent in the dataset. Less common endings like "TRL", "BLVD", and "PKWY" are used less frequently, meaning they may be less common types of streets or specific to certain areas.
